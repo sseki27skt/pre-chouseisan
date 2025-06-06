@@ -33,7 +33,7 @@ export default function MultiTimeScheduler() {
     );
   };
   const handleGenerate = () => {
-    if (selectedDates.length === 0 || selectedTimes.length === 0) {
+    if (!selectedDates || selectedDates.length === 0 || selectedTimes.length === 0) {
       setOutput(""); return;
     }
     const combinations = selectedDates.flatMap((date) =>
@@ -134,7 +134,7 @@ export default function MultiTimeScheduler() {
       </Card>
       <div className="flex items-center gap-x-2 mb-4">
         <Button onClick={handleGenerate}>組み合わせを生成</Button>
-        <Button onClick={handleClearAll} variant="secondary" disabled={selectedDates.length === 0 && selectedTimes.length === 0}>すべてクリア</Button>
+        <Button onClick={handleClearAll} variant="secondary" disabled={(!selectedDates || selectedDates.length === 0) && selectedTimes.length === 0}>すべてクリア</Button>
       </div>
 
       <Card>
