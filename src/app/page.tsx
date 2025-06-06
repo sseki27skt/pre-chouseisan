@@ -1,103 +1,165 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+// ★ 1. アイコンをインポートする
+import { Copy, Check } from "lucide-react";
+
+const groupedTimes = Array.from({ length: 24 }, (_, h) => {
+  const hour = String(h).padStart(2, '0');
+  const minutes = ['00', '15', '30', '45'].map(m => `${hour}:${m}`);
+  return { [hour]: minutes };
+}).reduce((acc, curr) => ({ ...acc, ...curr }), {});
+
+const allTimes = Object.values(groupedTimes).flat();
+
+
+export default function MultiTimeScheduler() {
+  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
+  const [output, setOutput] = useState("");
+  const [isCopied, setIsCopied] = useState(false);
+  // ★ 2. アイコンボタン用のコピー状態を追加
+  const [iconCopied, setIconCopied] = useState(false);
+
+  // ... (handleTimeChange, handleGenerate は変更なし) ...
+  const handleTimeChange = (time: string, checked: boolean) => {
+    setSelectedTimes((prev) =>
+      checked ? [...prev, time] : prev.filter((t) => t !== time)
+    );
+  };
+  const handleGenerate = () => {
+    if (selectedDates.length === 0 || selectedTimes.length === 0) {
+      setOutput(""); return;
+    }
+    const combinations = selectedDates.flatMap((date) =>
+      selectedTimes.map((time) => {
+        const formattedDate = format(date, "yyyy-MM-dd");
+        return { datetime: new Date(`${formattedDate}T${time}`), display: `${format(date, "M/d")} ${time}〜` };
+      })
+    );
+    combinations.sort((a, b) => a.datetime.getTime() - b.datetime.getTime());
+    const result = combinations.map((c) => c.display).join("\n");
+    setOutput(result);
+  };
+
+  const handleCopyAndGo = () => {
+    if (!output) return;
+    navigator.clipboard.writeText(output).then(() => {
+      setIsCopied(true);
+      window.open('https://chouseisan.com/', '_blank');
+      setTimeout(() => { setIsCopied(false); }, 2000);
+    });
+  };
+
+  // ★ 3. 「コピーだけする」関数を新しく作成
+  const handleCopyOnly = () => {
+    if (!output) return;
+    navigator.clipboard.writeText(output).then(() => {
+      setIconCopied(true);
+      setTimeout(() => { setIconCopied(false); }, 2000);
+    });
+  };
+
+  const handleClearAll = () => {
+    setSelectedDates([]);
+    setSelectedTimes([]);
+    setOutput("");
+  };
+  const handleBulkSelect = (type: 'morning' | 'afternoon' | 'evening' | 'all' | 'none') => {
+    let newSelectedTimes: string[] = [];
+    switch (type) {
+      case 'morning': newSelectedTimes = allTimes.filter(t => t >= '09:00' && t < '12:00'); break;
+      case 'afternoon': newSelectedTimes = allTimes.filter(t => t >= '13:00' && t < '18:00'); break;
+      case 'evening': newSelectedTimes = allTimes.filter(t => t >= '19:00' && t < '23:00'); break;
+      case 'all': newSelectedTimes = [...allTimes]; break;
+      case 'none': newSelectedTimes = []; break;
+    }
+    setSelectedTimes(newSelectedTimes);
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="p-4 max-w-4xl mx-auto">
+      {/* ... (h1, 日付・時間選択部分は変更なし) ... */}
+      <h1 className="text-2xl font-bold mb-4">調整前さん</h1>
+ {/* ★ ここに説明文を追加します */}
+      <div className="mb-6 p-4 bg-slate-50 border rounded-lg text-slate-700">
+        <p className="mb-2">
+          「調整さん，時間候補複数あるとめんどくさい問題」を解決します．
+        </p>
+        <p>
+          <strong>使い方</strong><br />
+          1. 日付を選ぶ → 2. 時間帯を選ぶ → 3. ボタンを押せば、調整さんにそのまま貼り付けられる候補リストが完成！
+        </p>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+
+
+      <Card className="mb-4">
+        <CardContent className="p-4"><h2 className="text-xl font-semibold mb-2">1. 日付を選択</h2><Calendar mode="multiple" selected={selectedDates} onSelect={setSelectedDates} className="rounded-md border"/></CardContent>
+      </Card>
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="text-xl font-semibold">2. 時間帯を選択</h2>
+            <div className="flex items-center gap-x-2">
+              <Button onClick={() => handleBulkSelect('morning')} variant="outline" size="sm">午前</Button>
+              <Button onClick={() => handleBulkSelect('afternoon')} variant="outline" size="sm">午後</Button>
+              <Button onClick={() => handleBulkSelect('evening')} variant="outline" size="sm">夜間</Button>
+              <Button onClick={() => handleBulkSelect('all')} variant="ghost" size="sm">全選択</Button>
+              <Button onClick={() => handleBulkSelect('none')} variant="ghost" size="sm">全解除</Button>
+            </div>
+          </div>
+          <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
+            {Object.entries(groupedTimes).map(([hour, minutes]) => (
+              <div key={hour}>
+                <h3 className="font-semibold mb-2 border-b pb-1">{hour}:00台</h3>
+                <div className="grid grid-cols-4 gap-x-4 gap-y-2">
+                  {minutes.map((time) => (
+                    <label key={time} className="flex items-center space-x-2 p-1 rounded-md hover:bg-gray-100 cursor-pointer">
+                      <input type="checkbox" value={time} checked={selectedTimes.includes(time)} onChange={(e) => handleTimeChange(e.target.value, e.target.checked)} className="form-checkbox h-4 w-4"/>
+                      <span>{time.substring(3)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      <div className="flex items-center gap-x-2 mb-4">
+        <Button onClick={handleGenerate}>組み合わせを生成</Button>
+        <Button onClick={handleClearAll} variant="secondary" disabled={selectedDates.length === 0 && selectedTimes.length === 0}>すべてクリア</Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-xl font-semibold">3. 出力して調整さんへ</h2>
+            <Button onClick={handleCopyAndGo} disabled={!output}>
+              {isCopied ? 'コピーして移動中...' : 'コピーして調整さんへ'}
+            </Button>
+          </div>
+          {/* ★ 4. テキストエリアとアイコンボタンを配置 */}
+          <div className="relative">
+            <Textarea value={output} rows={10} readOnly placeholder="ここに組み合わせが出力されます..."/>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2"
+              onClick={handleCopyOnly}
+              disabled={!output}
+            >
+              {iconCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
