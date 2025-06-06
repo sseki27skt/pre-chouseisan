@@ -19,7 +19,7 @@ const allTimes = Object.values(groupedTimes).flat();
 
 
 export default function MultiTimeScheduler() {
-  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  const [selectedDates, setSelectedDates] = useState<Date[] | undefined>([]);
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [output, setOutput] = useState("");
   const [isCopied, setIsCopied] = useState(false);
