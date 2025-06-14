@@ -181,7 +181,7 @@ const TimeSelectionCard: React.FC<TimeSelectionCardProps> = ({
                       onChange={(e) => periodProps.handlePeriodChange(period.id, e.target.checked)}
                       className="form-checkbox h-4 w-4"
                     />
-                    <span>{period.name}</span>
+                    <span>{period.name} ({period.startTime})</span>
                   </label>
                 ))}
               </div>

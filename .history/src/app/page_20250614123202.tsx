@@ -24,14 +24,14 @@ const groupedTimes = Array.from({ length: 24 }, (_, h) => {
 const allTimes = Object.values(groupedTimes).flat();
 
 const periodSettings = [
-  { id: 1, name: '1限' },
-  { id: 2, name: '2限' },
-  { id: 3, name: '3限' },
-  { id: 4, name: '4限' },
-  { id: 5, name: '5限' },
-  { id: 6, name: '6限' },
-  { id: 7, name: '7限' },
-  { id: 8, name: '8限' },
+  { id: 1, name: '1限', startTime: '09:00', endTime: '10:30' },
+  { id: 2, name: '2限', startTime: '10:40', endTime: '12:10' },
+  { id: 3, name: '3限', startTime: '13:00', endTime: '14:30' },
+  { id: 4, name: '4限', startTime: '14:40', endTime: '16:10' },
+  { id: 5, name: '5限', startTime: '16:20', endTime: '17:50' },
+  { id: 6, name: '6限', startTime: '18:00', endTime: '19:30' },
+  { id: 7, name: '7限', startTime: '19:40', endTime: '21:10' },
+  { id: 8, name: '8限', startTime: '21:20', endTime: '22:50' },
 ];
 
 // ============== 1. 子コンポーネント定義 ==============
@@ -181,7 +181,7 @@ const TimeSelectionCard: React.FC<TimeSelectionCardProps> = ({
                       onChange={(e) => periodProps.handlePeriodChange(period.id, e.target.checked)}
                       className="form-checkbox h-4 w-4"
                     />
-                    <span>{period.name}</span>
+                    <span>{period.name} ({period.startTime})</span>
                   </label>
                 ))}
               </div>

@@ -12,7 +12,6 @@ import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useGenerateOutput } from "./useGenerateOutput";
 
 // --- 定数 (変更なし) ---
 const groupedTimes = Array.from({ length: 24 }, (_, h) => {
@@ -24,14 +23,14 @@ const groupedTimes = Array.from({ length: 24 }, (_, h) => {
 const allTimes = Object.values(groupedTimes).flat();
 
 const periodSettings = [
-  { id: 1, name: '1限' },
-  { id: 2, name: '2限' },
-  { id: 3, name: '3限' },
-  { id: 4, name: '4限' },
-  { id: 5, name: '5限' },
-  { id: 6, name: '6限' },
-  { id: 7, name: '7限' },
-  { id: 8, name: '8限' },
+  { id: 1, name: '1限', startTime: '09:00', endTime: '10:30' },
+  { id: 2, name: '2限', startTime: '10:40', endTime: '12:10' },
+  { id: 3, name: '3限', startTime: '13:00', endTime: '14:30' },
+  { id: 4, name: '4限', startTime: '14:40', endTime: '16:10' },
+  { id: 5, name: '5限', startTime: '16:20', endTime: '17:50' },
+  { id: 6, name: '6限', startTime: '18:00', endTime: '19:30' },
+  { id: 7, name: '7限', startTime: '19:40', endTime: '21:10' },
+  { id: 8, name: '8限', startTime: '21:20', endTime: '22:50' },
 ];
 
 // ============== 1. 子コンポーネント定義 ==============
@@ -181,7 +180,7 @@ const TimeSelectionCard: React.FC<TimeSelectionCardProps> = ({
                       onChange={(e) => periodProps.handlePeriodChange(period.id, e.target.checked)}
                       className="form-checkbox h-4 w-4"
                     />
-                    <span>{period.name}</span>
+                    <span>{period.name} ({period.startTime})</span>
                   </label>
                 ))}
               </div>
@@ -193,6 +192,32 @@ const TimeSelectionCard: React.FC<TimeSelectionCardProps> = ({
   );
 };
 
+// 操作ボタン
+type ActionControlsProps = {
+  onGenerate: () => void;
+  onClearAll: () => void;
+  showWeekday: boolean;
+  onShowWeekdayChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+};
+
+const ActionControls: React.FC<ActionControlsProps> = ({
+  onGenerate,
+  onClearAll,
+  showWeekday,
+  onShowWeekdayChange,
+}) => (
+  <div className="flex items-center gap-x-2 mb-4">
+    <Button onClick={onGenerate}>組み合わせを生成</Button>
+    <Button onClick={onClearAll} variant="secondary">
+      すべてクリア
+    </Button>
+    <label className="flex items-center gap-x-1 text-sm">
+      <input type="checkbox" checked={showWeekday} onChange={onShowWeekdayChange} className="form-checkbox h-4 w-4"/>
+      曜日を表示
+    </label>
+  </div>
+);
+
 // 出力カード
 type OutputCardProps = {
   output: string;
@@ -200,11 +225,9 @@ type OutputCardProps = {
   isCopied: boolean;
   onCopyOnly: () => void;
   iconCopied: boolean;
-  showWeekday: boolean;
-  onShowWeekdayChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
-const OutputCard: React.FC<OutputCardProps> = ({ output, onCopyAndGo, isCopied, onCopyOnly, iconCopied, showWeekday, onShowWeekdayChange }) => (
+const OutputCard: React.FC<OutputCardProps> = ({ output, onCopyAndGo, isCopied, onCopyOnly, iconCopied }) => (
   <Card>
     <CardContent className="p-4">
       <div className="flex justify-between items-center mb-2">
@@ -212,12 +235,6 @@ const OutputCard: React.FC<OutputCardProps> = ({ output, onCopyAndGo, isCopied, 
         <Button onClick={onCopyAndGo} disabled={!output}>
           {isCopied ? "コピーして移動中..." : "コピーして調整さんへ"}
         </Button>
-      </div>
-      <div className="flex items-center gap-x-2 mb-2">
-        <label className="flex items-center gap-x-1 text-sm">
-          <input type="checkbox" checked={showWeekday} onChange={onShowWeekdayChange} className="form-checkbox h-4 w-4"/>
-          曜日を表示
-        </label>
       </div>
       <div className="relative">
         <Textarea value={output} rows={10} readOnly placeholder="ここに組み合わせが出力されます..."/>
@@ -230,120 +247,3 @@ const OutputCard: React.FC<OutputCardProps> = ({ output, onCopyAndGo, isCopied, 
 );
 
 
-// ============== 2. 親コンポーネント ==============
-export default function MultiTimeScheduler() {
-  // --- 状態管理 (State) ---
-  const [selectedDates, setSelectedDates] = useState<Date[] | undefined>([]);
-  const [output, setOutput] = useState("");
-  const [isCopied, setIsCopied] = useState(false);
-  const [iconCopied, setIconCopied] = useState(false);
-  const [showWeekday, setShowWeekday] = useState(false);
-  const [selectionMode, setSelectionMode] = useState<'time' | 'period'>('time');
-  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
-  const [timeRange, setTimeRange] = useState<[number, number]>([9, 17]);
-  const [timeStep, setTimeStep] = useState<number>(60);
-  const [selectedPeriods, setSelectedPeriods] = useState<number[]>([]);
-
-  // --- ロジック (useEffect, Handlers) ---
-  useEffect(() => {
-    if (selectionMode !== 'time') return;
-
-    const [startHourFloat, endHourFloat] = timeRange;
-    const startTimeInMinutes = startHourFloat * 60;
-
-    const newSelectedTimes = allTimes.filter(time => {
-      const [hour, minute] = time.split(':').map(Number);
-      const timeValue = hour + minute / 60;
-
-      if (timeValue < startHourFloat || timeValue > endHourFloat) {
-        return false;
-      }
-      const currentTimeInMinutes = hour * 60 + minute;
-      const diffInMinutes = currentTimeInMinutes - startTimeInMinutes;
-      return diffInMinutes >= 0 && diffInMinutes % timeStep === 0;
-    });
-    setSelectedTimes(newSelectedTimes);
-  }, [timeRange, timeStep, selectionMode]);
-
-  const handleTimeChange = (time: string, checked: boolean) => {
-    setSelectedTimes((prev) =>
-      checked ? [...prev, time] : prev.filter((t) => t !== time)
-    );
-  };
-  
-  const handlePeriodChange = (periodId: number, checked: boolean) => {
-    setSelectedPeriods((prev) =>
-      checked ? [...prev, periodId] : prev.filter((p) => p !== periodId)
-    );
-  };
-
-  useGenerateOutput({
-    selectedDates,
-    selectedTimes,
-    selectedPeriods,
-    selectionMode,
-    showWeekday,
-    allTimes,
-    setOutput
-  });
-
-  const handleCopyAndGo = () => {
-    if (!output) return;
-    navigator.clipboard.writeText(output).then(() => {
-      setIsCopied(true);
-      window.open("https://chouseisan.com/", "_blank");
-      setTimeout(() => setIsCopied(false), 2000);
-    });
-  };
-
-  const handleCopyOnly = () => {
-    if (!output) return;
-    navigator.clipboard.writeText(output).then(() => {
-      setIconCopied(true);
-      setTimeout(() => setIconCopied(false), 2000);
-    });
-  };
-
-  // --- レンダリング ---
-  return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">調整前さん</h1>
-      
-      <IntroductorySection />
-      
-      <DateSelectorCard 
-        selectedDates={selectedDates} 
-        onSelect={setSelectedDates} 
-      />
-      
-      <TimeSelectionCard 
-        selectionMode={selectionMode}
-        onSelectionModeChange={(value: string) => setSelectionMode(value as 'time' | 'period')}
-        timeProps={{
-          selectedTimes,
-          handleTimeChange,
-          timeRange,
-          setTimeRange,
-          timeStep,
-          setTimeStep,
-          setSelectedTimes,
-        }}
-        periodProps={{
-          selectedPeriods,
-          handlePeriodChange,
-          setSelectedPeriods
-        }}
-      />
-      
-      <OutputCard
-        output={output}
-        isCopied={isCopied}
-        iconCopied={iconCopied}
-        onCopyAndGo={handleCopyAndGo}
-        onCopyOnly={handleCopyOnly}
-        showWeekday={showWeekday}
-        onShowWeekdayChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowWeekday(e.target.checked)}
-      />
-    </div>
-  );
-}

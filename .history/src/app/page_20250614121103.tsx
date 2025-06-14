@@ -12,7 +12,6 @@ import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useGenerateOutput } from "./useGenerateOutput";
 
 // --- 定数 (変更なし) ---
 const groupedTimes = Array.from({ length: 24 }, (_, h) => {
@@ -24,14 +23,14 @@ const groupedTimes = Array.from({ length: 24 }, (_, h) => {
 const allTimes = Object.values(groupedTimes).flat();
 
 const periodSettings = [
-  { id: 1, name: '1限' },
-  { id: 2, name: '2限' },
-  { id: 3, name: '3限' },
-  { id: 4, name: '4限' },
-  { id: 5, name: '5限' },
-  { id: 6, name: '6限' },
-  { id: 7, name: '7限' },
-  { id: 8, name: '8限' },
+  { id: 1, name: '1限', startTime: '09:00', endTime: '10:30' },
+  { id: 2, name: '2限', startTime: '10:40', endTime: '12:10' },
+  { id: 3, name: '3限', startTime: '13:00', endTime: '14:30' },
+  { id: 4, name: '4限', startTime: '14:40', endTime: '16:10' },
+  { id: 5, name: '5限', startTime: '16:20', endTime: '17:50' },
+  { id: 6, name: '6限', startTime: '18:00', endTime: '19:30' },
+  { id: 7, name: '7限', startTime: '19:40', endTime: '21:10' },
+  { id: 8, name: '8限', startTime: '21:20', endTime: '22:50' },
 ];
 
 // ============== 1. 子コンポーネント定義 ==============
@@ -52,12 +51,7 @@ const IntroductorySection = () => (
 );
 
 // 日付選択カード
-type DateSelectorCardProps = {
-  selectedDates: Date[] | undefined;
-  onSelect: (dates: Date[] | undefined) => void;
-};
-
-const DateSelectorCard: React.FC<DateSelectorCardProps> = ({ selectedDates, onSelect }) => (
+const DateSelectorCard = ({ selectedDates, onSelect }) => (
   <Card className="mb-4">
     <CardContent className="p-4 flex flex-col items-center">
       <h2 className="text-xl font-semibold mb-2 self-start">
@@ -74,30 +68,11 @@ const DateSelectorCard: React.FC<DateSelectorCardProps> = ({ selectedDates, onSe
 );
 
 // 時間帯・時限選択カード
-type TimeSelectionCardProps = {
-  selectionMode: 'time' | 'period';
-  onSelectionModeChange: (value: string) => void;
-  timeProps: {
-    selectedTimes: string[];
-    handleTimeChange: (time: string, checked: boolean) => void;
-    timeRange: [number, number];
-    setTimeRange: (range: [number, number]) => void;
-    timeStep: number;
-    setTimeStep: (step: number) => void;
-    setSelectedTimes: (times: string[]) => void;
-  };
-  periodProps: {
-    selectedPeriods: number[];
-    handlePeriodChange: (periodId: number, checked: boolean) => void;
-    setSelectedPeriods: (periods: number[]) => void;
-  };
-};
-
-const TimeSelectionCard: React.FC<TimeSelectionCardProps> = ({ 
+const TimeSelectionCard = ({ 
   selectionMode, onSelectionModeChange, timeProps, periodProps 
 }) => {
   
-  const formatSliderValue = (value: number) => {
+  const formatSliderValue = (value) => {
     const hours = Math.floor(value);
     const minutes = (value - hours) * 60;
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
@@ -181,7 +156,7 @@ const TimeSelectionCard: React.FC<TimeSelectionCardProps> = ({
                       onChange={(e) => periodProps.handlePeriodChange(period.id, e.target.checked)}
                       className="form-checkbox h-4 w-4"
                     />
-                    <span>{period.name}</span>
+                    <span>{period.name} ({period.startTime})</span>
                   </label>
                 ))}
               </div>
@@ -193,6 +168,32 @@ const TimeSelectionCard: React.FC<TimeSelectionCardProps> = ({
   );
 };
 
+// 操作ボタン
+type ActionControlsProps = {
+  onGenerate: () => void;
+  onClearAll: () => void;
+  showWeekday: boolean;
+  onShowWeekdayChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+};
+
+const ActionControls: React.FC<ActionControlsProps> = ({
+  onGenerate,
+  onClearAll,
+  showWeekday,
+  onShowWeekdayChange,
+}) => (
+  <div className="flex items-center gap-x-2 mb-4">
+    <Button onClick={onGenerate}>組み合わせを生成</Button>
+    <Button onClick={onClearAll} variant="secondary">
+      すべてクリア
+    </Button>
+    <label className="flex items-center gap-x-1 text-sm">
+      <input type="checkbox" checked={showWeekday} onChange={onShowWeekdayChange} className="form-checkbox h-4 w-4"/>
+      曜日を表示
+    </label>
+  </div>
+);
+
 // 出力カード
 type OutputCardProps = {
   output: string;
@@ -200,11 +201,9 @@ type OutputCardProps = {
   isCopied: boolean;
   onCopyOnly: () => void;
   iconCopied: boolean;
-  showWeekday: boolean;
-  onShowWeekdayChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
-const OutputCard: React.FC<OutputCardProps> = ({ output, onCopyAndGo, isCopied, onCopyOnly, iconCopied, showWeekday, onShowWeekdayChange }) => (
+const OutputCard: React.FC<OutputCardProps> = ({ output, onCopyAndGo, isCopied, onCopyOnly, iconCopied }) => (
   <Card>
     <CardContent className="p-4">
       <div className="flex justify-between items-center mb-2">
@@ -212,12 +211,6 @@ const OutputCard: React.FC<OutputCardProps> = ({ output, onCopyAndGo, isCopied, 
         <Button onClick={onCopyAndGo} disabled={!output}>
           {isCopied ? "コピーして移動中..." : "コピーして調整さんへ"}
         </Button>
-      </div>
-      <div className="flex items-center gap-x-2 mb-2">
-        <label className="flex items-center gap-x-1 text-sm">
-          <input type="checkbox" checked={showWeekday} onChange={onShowWeekdayChange} className="form-checkbox h-4 w-4"/>
-          曜日を表示
-        </label>
       </div>
       <div className="relative">
         <Textarea value={output} rows={10} readOnly placeholder="ここに組み合わせが出力されます..."/>
@@ -277,15 +270,46 @@ export default function MultiTimeScheduler() {
     );
   };
 
-  useGenerateOutput({
-    selectedDates,
-    selectedTimes,
-    selectedPeriods,
-    selectionMode,
-    showWeekday,
-    allTimes,
-    setOutput
-  });
+  const handleGenerate = () => {
+    if (!selectedDates || selectedDates.length === 0) {
+      setOutput("");
+      return;
+    }
+    const dateLabel = (date: Date) =>
+      showWeekday
+        ? format(date, "M/d(E)", { locale: ja })
+        : format(date, "M/d");
+
+    let combinations: { datetime: Date; display: string }[] = [];
+
+    if (selectionMode === 'time') {
+      if (selectedTimes.length === 0) {
+        setOutput(selectedDates.map((date) => dateLabel(date)).join("\n"));
+        return;
+      }
+      combinations = selectedDates.flatMap((date) =>
+        selectedTimes.map((time) => ({
+          datetime: new Date(`${format(date, "yyyy-MM-dd")}T${time}`),
+          display: `${dateLabel(date)} ${time}〜`,
+        }))
+      );
+    } else { // 'period'モード
+      if (selectedPeriods.length === 0) {
+        setOutput(selectedDates.map((date) => dateLabel(date)).join("\n"));
+        return;
+      }
+      const periodsToGenerate = periodSettings.filter(p => selectedPeriods.includes(p.id));
+      combinations = selectedDates.flatMap((date) =>
+        periodsToGenerate.map((period) => ({
+          datetime: new Date(`${format(date, "yyyy-MM-dd")}T${period.startTime}`),
+          display: `${dateLabel(date)} ${period.name}`,
+        }))
+      );
+    }
+    
+    combinations.sort((a, b) => a.datetime.getTime() - b.datetime.getTime());
+    setOutput(combinations.map((c) => c.display).join("\n"));
+  };
 
   const handleCopyAndGo = () => {
     if (!output) return;
@@ -302,6 +326,14 @@ export default function MultiTimeScheduler() {
       setIconCopied(true);
       setTimeout(() => setIconCopied(false), 2000);
     });
+  };
+
+  const handleClearAll = () => {
+    setSelectedDates([]);
+    setTimeRange([9, 17]);
+    setTimeStep(60);
+    setSelectedPeriods([]);
+    setOutput("");
   };
 
   // --- レンダリング ---
@@ -335,14 +367,19 @@ export default function MultiTimeScheduler() {
         }}
       />
       
+      <ActionControls 
+        onGenerate={handleGenerate}
+        onClearAll={handleClearAll}
+        showWeekday={showWeekday}
+        onShowWeekdayChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowWeekday(e.target.checked)}
+      />
+
       <OutputCard
         output={output}
         isCopied={isCopied}
         iconCopied={iconCopied}
         onCopyAndGo={handleCopyAndGo}
         onCopyOnly={handleCopyOnly}
-        showWeekday={showWeekday}
-        onShowWeekdayChange={(e: React.ChangeEvent<HTMLInputElement>) => setShowWeekday(e.target.checked)}
       />
     </div>
   );
