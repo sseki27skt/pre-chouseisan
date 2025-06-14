@@ -35,6 +35,9 @@ export function useGenerateOutput({
       setOutput("");
       return;
     }
+    // 日付を昇順でソート
+    const sortedDates = [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
+
     const dateLabel = (date: Date) =>
       showWeekday
         ? format(date, "M/d(E)", { locale: ja })
@@ -44,21 +47,21 @@ export function useGenerateOutput({
 
     if (selectionMode === 'time') {
       if (selectedTimes.length === 0) {
-        setOutput(selectedDates.map((date) => dateLabel(date)).join("\n"));
+        setOutput(sortedDates.map((date) => dateLabel(date)).join("\n"));
         return;
       }
-      combinations = selectedDates.flatMap((date) =>
+      combinations = sortedDates.flatMap((date) =>
         selectedTimes.map((time) => ({
           display: `${dateLabel(date)} ${time}〜`,
         }))
       );
     } else {
       if (selectedPeriods.length === 0) {
-        setOutput(selectedDates.map((date) => dateLabel(date)).join("\n"));
+        setOutput(sortedDates.map((date) => dateLabel(date)).join("\n"));
         return;
       }
       const periodsToGenerate = periodSettings.filter(p => selectedPeriods.includes(p.id));
-      combinations = selectedDates.flatMap((date) =>
+      combinations = sortedDates.flatMap((date) =>
         periodsToGenerate.map((period) => ({
           display: `${dateLabel(date)} ${period.name}`,
         }))
