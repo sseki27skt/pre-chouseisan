@@ -23,11 +23,24 @@ function Calendar({
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }) {
+  // 画面幅によって月数を切り替え
+  const [numberOfMonths, setNumberOfMonths] = React.useState(1);
+
+  React.useEffect(() => {
+    const updateMonths = () => {
+      setNumberOfMonths(window.innerWidth >= 768 ? 2 : 1); // 768px以上なら2ヶ月
+    };
+    updateMonths();
+    window.addEventListener("resize", updateMonths);
+    return () => window.removeEventListener("resize", updateMonths);
+  }, []);
+
   const defaultClassNames = getDefaultClassNames()
 
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      numberOfMonths={numberOfMonths}
       className={cn(
         "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
