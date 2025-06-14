@@ -76,6 +76,16 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --primary: oklch(0.6 0.18 145); /* 緑系 */
+  --primary-foreground: oklch(0.985 0 0);
+  --accent: oklch(0.7 0.15 145);  /* 緑系アクセント */
+  --accent-foreground: oklch(0.205 0 0);
+  --sidebar: oklch(0.92 0.12 145); /* サイドバーも緑系 */
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.6 0.18 145);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.7 0.15 145);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
 }
 
 .dark {
@@ -110,6 +120,16 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --primary: oklch(0.5 0.18 145); /* ダーク用緑系 */
+  --primary-foreground: oklch(0.985 0 0);
+  --accent: oklch(0.6 0.15 145);
+  --accent-foreground: oklch(0.985 0 0);
+  --sidebar: oklch(0.25 0.12 145);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.5 0.18 145);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.6 0.15 145);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
 }
 
 @layer base {
