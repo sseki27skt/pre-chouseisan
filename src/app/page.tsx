@@ -58,9 +58,19 @@ type DateSelectorCardProps = {
 const DateSelectorCard: React.FC<DateSelectorCardProps> = ({ selectedDates, onSelect }) => (
   <Card className="mb-4">
     <CardContent className="p-4 flex flex-col items-center">
-      <h2 className="text-xl font-semibold mb-2 self-start">
-        1. 日付を選択
-      </h2>
+      <div className="w-full flex justify-between items-center mb-2">
+        <h2 className="text-xl font-semibold self-start">
+          1. 日付を選択
+        </h2>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onSelect([])}
+          disabled={!selectedDates || selectedDates.length === 0}
+        >
+          日付選択解除
+        </Button>
+      </div>
       <Calendar
         mode="multiple"
         selected={selectedDates}
@@ -122,7 +132,7 @@ const TimeSelectionCard: React.FC<TimeSelectionCardProps> = ({
           <TabsContent value="time" className="mt-4">
             <div className="flex justify-end mb-4">
               <Button onClick={() => timeProps.setSelectedTimes([])} variant="ghost" size="sm">
-                  時間全解除
+                  時間選択解除
               </Button>
             </div>
             <div className="p-4 border rounded-lg mb-6 space-y-6">
@@ -273,11 +283,17 @@ export default function MultiTimeScheduler() {
     console.log("Updated selectedTimes:", newSelectedTimes);
   }, [timeRange, timeStep, selectionMode]);
 
-  const handleTimeChange = (time: string, checked: boolean) => {
-    setSelectedTimes((prev) =>
-      checked ? [...prev, time] : prev.filter((t) => t !== time)
-    );
-  };
+const handleTimeChange = (time: string, checked: boolean) => {
+  setSelectedTimes((prev) => {
+    const next = checked ? [...prev, time] : prev.filter((t) => t !== time);
+    // 時刻順にソート
+    return next.sort((a, b) => {
+      const [ah, am] = a.split(':').map(Number);
+      const [bh, bm] = b.split(':').map(Number);
+      return (ah * 60 + am) - (bh * 60 + bm);
+    });
+  });
+};
   
   const handlePeriodChange = (periodId: number, checked: boolean) => {
     setSelectedPeriods((prev) =>
