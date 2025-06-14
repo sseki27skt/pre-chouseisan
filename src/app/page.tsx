@@ -247,20 +247,30 @@ export default function MultiTimeScheduler() {
     if (selectionMode !== 'time') return;
 
     const [startHourFloat, endHourFloat] = timeRange;
-    const startTimeInMinutes = startHourFloat * 60;
+    const startTimeInMinutesSelected = startHourFloat * 60; // ユーザーが選択した開始時間（分）
+    const endTimeInMinutesSelected = endHourFloat * 60;   // ユーザーが選択した終了時間（分）
 
     const newSelectedTimes = allTimes.filter(time => {
       const [hour, minute] = time.split(':').map(Number);
-      const timeValue = hour + minute / 60;
+      const currentTimeInMinutes = hour * 60 + minute; // 現在の時間を分に変換 (00:00からの経過分)
 
-      if (timeValue < startHourFloat || timeValue > endHourFloat) {
+
+    if (currentTimeInMinutes < startTimeInMinutesSelected || currentTimeInMinutes > endTimeInMinutesSelected) {
         return false;
       }
-      const currentTimeInMinutes = hour * 60 + minute;
-      const diffInMinutes = currentTimeInMinutes - startTimeInMinutes;
+      
+      const diffInMinutes = currentTimeInMinutes - startTimeInMinutesSelected; // 修正前の diffInMinutes を使用
       return diffInMinutes >= 0 && diffInMinutes % timeStep === 0;
     });
+
+    newSelectedTimes.sort((a, b) => {
+      const [aHour, aMinute] = a.split(':').map(Number);
+      const [bHour, bMinute] = b.split(':').map(Number);
+      return (aHour * 60 + aMinute) - (bHour * 60 + bMinute);
+    });
+
     setSelectedTimes(newSelectedTimes);
+    console.log("Updated selectedTimes:", newSelectedTimes);
   }, [timeRange, timeStep, selectionMode]);
 
   const handleTimeChange = (time: string, checked: boolean) => {
@@ -281,7 +291,6 @@ export default function MultiTimeScheduler() {
     selectedPeriods,
     selectionMode,
     showWeekday,
-    allTimes,
     setOutput
   });
 

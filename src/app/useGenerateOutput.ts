@@ -19,7 +19,7 @@ export function useGenerateOutput({
   selectedPeriods,
   selectionMode,
   showWeekday,
-  allTimes,
+//   allTimes,
   setOutput
 }: {
   selectedDates: Date[] | undefined,
@@ -27,7 +27,7 @@ export function useGenerateOutput({
   selectedPeriods: number[],
   selectionMode: 'time' | 'period',
   showWeekday: boolean,
-  allTimes: string[],
+//   allTimes: string[],
   setOutput: (output: string) => void
 }) {
   useEffect(() => {
@@ -65,5 +65,6 @@ export function useGenerateOutput({
       );
     }
     setOutput(combinations.map((c) => c.display).join("\n"));
-  }, [selectedDates, selectedTimes, selectedPeriods, selectionMode, showWeekday, allTimes, setOutput]);
+//   }, [selectedDates, selectedTimes, selectedPeriods, selectionMode, showWeekday, allTimes, setOutput]);
+  }, [selectedDates, selectedTimes, selectedPeriods, selectionMode, showWeekday, setOutput]);
 }
