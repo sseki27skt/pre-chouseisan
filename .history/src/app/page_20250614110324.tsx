@@ -193,7 +193,7 @@ export default function MultiTimeScheduler() {
               <Slider
                 id="time-range"
                 value={timeRange}
-                onValueChange={(value) => setTimeRange([value[0], value[1]])}
+                onValueChange={setTimeRange}
                 max={24}
                 min={0}
                 // ▼▼▼ 2. スライダーの移動単位を30分(0.5)に変更 ▼▼▼

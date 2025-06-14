@@ -1,5 +1,6 @@
 "use client";
 
+// ▼▼▼ 1. 必要なコンポーネントをインポート
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,42 +30,36 @@ export default function MultiTimeScheduler() {
   const [iconCopied, setIconCopied] = useState(false);
   const [showWeekday, setShowWeekday] = useState(false);
 
-  // ▼▼▼ スライダーのstepを0.5にするため、timeRangeの型も変更しうる
-  const [timeRange, setTimeRange] = useState<[number, number]>([9, 17]);
-  const [timeStep, setTimeStep] = useState<number>(60);
+  // ▼▼▼ 2. スライダーとラジオボタンの状態を管理するstateを追加
+  const [timeRange, setTimeRange] = useState<[number, number]>([9, 17]); // デフォルト 9:00 - 17:00
+  const [timeStep, setTimeStep] = useState<number>(60); // デフォルト 60分刻み
 
-  // ▼▼▼ 1. 起点を考慮した新しい計算ロジックに全面的に修正 ▼▼▼
+  // ▼▼▼ 3. スライダーやラジオボタンの変更をチェックボックスに反映させるロジック
   useEffect(() => {
-    const [startHourFloat, endHourFloat] = timeRange;
-
-    // スライダーの開始時刻を分単位に変換
-    const startTimeInMinutes = startHourFloat * 60;
+    const [startHour, endHour] = timeRange;
 
     const newSelectedTimes = allTimes.filter(time => {
       const [hour, minute] = time.split(':').map(Number);
-      const timeValue = hour + minute / 60;
+      const timeValue = hour + minute / 60; // 時間を数値に変換 (例: 9:30 -> 9.5)
 
-      // まずはスライダーで選択された範囲内かチェック
-      if (timeValue < startHourFloat || timeValue > endHourFloat) {
+      // 範囲外かチェック
+      if (timeValue < startHour || timeValue > endHour) {
         return false;
       }
 
-      // 現在の時刻を分単位に変換
-      const currentTimeInMinutes = hour * 60 + minute;
-
-      // 開始時刻からの差分を分で計算
-      const diffInMinutes = currentTimeInMinutes - startTimeInMinutes;
-
-      // 差分が0以上で、かつ選択した時間刻み(timeStep)で割り切れるかをチェック
-      if (diffInMinutes >= 0 && diffInMinutes % timeStep === 0) {
-        return true;
+      // ステップ（刻み幅）に合致するかチェック
+      if (timeStep === 60) {
+        return minute === 0; // 60分刻みなら00分のみ
       }
-
-      return false;
+      if (timeStep === 30) {
+        return minute === 0 || minute === 30; // 30分刻みなら00分と30分
+      }
+      // 15分刻みの場合は全ての時間が対象
+      return true;
     });
 
     setSelectedTimes(newSelectedTimes);
-  }, [timeRange, timeStep]);
+  }, [timeRange, timeStep]); // timeRangeかtimeStepが変わるたびに実行
 
 
   const handleTimeChange = (time: string, checked: boolean) => {
@@ -126,10 +121,14 @@ export default function MultiTimeScheduler() {
 
   const handleClearAll = () => {
     setSelectedDates([]);
+    // ▼▼▼ クリア時にスライダーもデフォルト値に戻す
     setTimeRange([9, 17]);
     setTimeStep(60);
+    // setSelectedTimesはuseEffectにより自動で更新される
   };
   
+  // ▼▼▼ handleBulkSelectは不要になったため削除
+
   const allHours = Object.keys(groupedTimes).sort();
   const startHour = '07';
   const startIndex = allHours.indexOf(startHour);
@@ -137,13 +136,6 @@ export default function MultiTimeScheduler() {
     ...allHours.slice(startIndex),
     ...allHours.slice(0, startIndex),
   ];
-
-  // スライダーの値を HH:MM 形式にフォーマットするヘルパー関数
-  const formatSliderValue = (value: number) => {
-    const hours = Math.floor(value);
-    const minutes = (value - hours) * 60;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-  }
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
@@ -177,6 +169,7 @@ export default function MultiTimeScheduler() {
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <h2 className="text-xl font-semibold">2. 時間帯を選択</h2>
+             {/* ▼▼▼ 4. ここからUIをスライダーとラジオボタンに置き換え ▼▼▼ */}
             <Button onClick={() => setSelectedTimes([])} variant="ghost" size="sm">
                 時間全解除
             </Button>
@@ -187,17 +180,16 @@ export default function MultiTimeScheduler() {
               <div className="flex justify-between mb-2">
                 <Label htmlFor="time-range">時間範囲</Label>
                 <span className="text-sm font-medium">
-                  {formatSliderValue(timeRange[0])} - {formatSliderValue(timeRange[1])}
+                  {String(timeRange[0]).padStart(2, '0')}:00 - {String(timeRange[1]).padStart(2, '0')}:00
                 </span>
               </div>
               <Slider
                 id="time-range"
                 value={timeRange}
-                onValueChange={(value) => setTimeRange([value[0], value[1]])}
+                onValueChange={setTimeRange}
                 max={24}
                 min={0}
-                // ▼▼▼ 2. スライダーの移動単位を30分(0.5)に変更 ▼▼▼
-                step={0.5}
+                step={1}
                 className="my-4"
               />
             </div>
@@ -207,16 +199,8 @@ export default function MultiTimeScheduler() {
               <RadioGroup
                 value={String(timeStep)}
                 onValueChange={(value) => setTimeStep(Number(value))}
-                className="flex flex-wrap items-center gap-x-6 gap-y-2"
+                className="flex items-center gap-x-6"
               >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="180" id="r5" />
-                  <Label htmlFor="r5">3時間</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="120" id="r4" />
-                  <Label htmlFor="r4">2時間</Label>
-                </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="60" id="r1" />
                   <Label htmlFor="r1">60分</Label>
@@ -232,6 +216,7 @@ export default function MultiTimeScheduler() {
               </RadioGroup>
             </div>
           </div>
+          {/* ▲▲▲ 4. UIの置き換えここまで ▲▲▲ */}
 
           <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
             {customOrderedHours.map((hour) => (

@@ -29,38 +29,37 @@ export default function MultiTimeScheduler() {
   const [iconCopied, setIconCopied] = useState(false);
   const [showWeekday, setShowWeekday] = useState(false);
 
-  // ▼▼▼ スライダーのstepを0.5にするため、timeRangeの型も変更しうる
   const [timeRange, setTimeRange] = useState<[number, number]>([9, 17]);
   const [timeStep, setTimeStep] = useState<number>(60);
 
-  // ▼▼▼ 1. 起点を考慮した新しい計算ロジックに全面的に修正 ▼▼▼
   useEffect(() => {
-    const [startHourFloat, endHourFloat] = timeRange;
-
-    // スライダーの開始時刻を分単位に変換
-    const startTimeInMinutes = startHourFloat * 60;
+    const [startHour, endHour] = timeRange;
 
     const newSelectedTimes = allTimes.filter(time => {
       const [hour, minute] = time.split(':').map(Number);
       const timeValue = hour + minute / 60;
 
-      // まずはスライダーで選択された範囲内かチェック
-      if (timeValue < startHourFloat || timeValue > endHourFloat) {
+      // 範囲外かチェック
+      if (timeValue < startHour || timeValue > endHour) {
         return false;
       }
 
-      // 現在の時刻を分単位に変換
-      const currentTimeInMinutes = hour * 60 + minute;
-
-      // 開始時刻からの差分を分で計算
-      const diffInMinutes = currentTimeInMinutes - startTimeInMinutes;
-
-      // 差分が0以上で、かつ選択した時間刻み(timeStep)で割り切れるかをチェック
-      if (diffInMinutes >= 0 && diffInMinutes % timeStep === 0) {
-        return true;
+      // ▼▼▼ 1. ロジックを更新: 2時間・3時間刻みの条件を追加 ▼▼▼
+      // ステップ（刻み幅）に合致するかチェック
+      if (timeStep === 180) { // 3時間
+        return minute === 0 && hour % 3 === 0;
       }
-
-      return false;
+      if (timeStep === 120) { // 2時間
+        return minute === 0 && hour % 2 === 0;
+      }
+      if (timeStep === 60) { // 1時間
+        return minute === 0;
+      }
+      if (timeStep === 30) {
+        return minute === 0 || minute === 30;
+      }
+      // 15分刻みの場合は全ての時間が対象
+      return true;
     });
 
     setSelectedTimes(newSelectedTimes);
@@ -138,13 +137,6 @@ export default function MultiTimeScheduler() {
     ...allHours.slice(0, startIndex),
   ];
 
-  // スライダーの値を HH:MM 形式にフォーマットするヘルパー関数
-  const formatSliderValue = (value: number) => {
-    const hours = Math.floor(value);
-    const minutes = (value - hours) * 60;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-  }
-
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">調整前さん</h1>
@@ -187,7 +179,7 @@ export default function MultiTimeScheduler() {
               <div className="flex justify-between mb-2">
                 <Label htmlFor="time-range">時間範囲</Label>
                 <span className="text-sm font-medium">
-                  {formatSliderValue(timeRange[0])} - {formatSliderValue(timeRange[1])}
+                  {String(timeRange[0]).padStart(2, '0')}:00 - {String(timeRange[1]).padStart(2, '0')}:00
                 </span>
               </div>
               <Slider
@@ -196,14 +188,14 @@ export default function MultiTimeScheduler() {
                 onValueChange={(value) => setTimeRange([value[0], value[1]])}
                 max={24}
                 min={0}
-                // ▼▼▼ 2. スライダーの移動単位を30分(0.5)に変更 ▼▼▼
-                step={0.5}
+                step={1}
                 className="my-4"
               />
             </div>
             
             <div>
               <Label className="mb-2 block">時間刻み</Label>
+              {/* ▼▼▼ 2. UIを更新: 「2時間」「3時間」の選択肢を追加 ▼▼▼ */}
               <RadioGroup
                 value={String(timeStep)}
                 onValueChange={(value) => setTimeStep(Number(value))}

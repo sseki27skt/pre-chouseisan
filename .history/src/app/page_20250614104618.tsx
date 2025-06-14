@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,10 +8,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale/ja";
 import { Copy, Check } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-
 
 const groupedTimes = Array.from({ length: 24 }, (_, h) => {
   const hour = String(h).padStart(2, "0");
@@ -28,44 +24,6 @@ export default function MultiTimeScheduler() {
   const [isCopied, setIsCopied] = useState(false);
   const [iconCopied, setIconCopied] = useState(false);
   const [showWeekday, setShowWeekday] = useState(false);
-
-  // ▼▼▼ スライダーのstepを0.5にするため、timeRangeの型も変更しうる
-  const [timeRange, setTimeRange] = useState<[number, number]>([9, 17]);
-  const [timeStep, setTimeStep] = useState<number>(60);
-
-  // ▼▼▼ 1. 起点を考慮した新しい計算ロジックに全面的に修正 ▼▼▼
-  useEffect(() => {
-    const [startHourFloat, endHourFloat] = timeRange;
-
-    // スライダーの開始時刻を分単位に変換
-    const startTimeInMinutes = startHourFloat * 60;
-
-    const newSelectedTimes = allTimes.filter(time => {
-      const [hour, minute] = time.split(':').map(Number);
-      const timeValue = hour + minute / 60;
-
-      // まずはスライダーで選択された範囲内かチェック
-      if (timeValue < startHourFloat || timeValue > endHourFloat) {
-        return false;
-      }
-
-      // 現在の時刻を分単位に変換
-      const currentTimeInMinutes = hour * 60 + minute;
-
-      // 開始時刻からの差分を分で計算
-      const diffInMinutes = currentTimeInMinutes - startTimeInMinutes;
-
-      // 差分が0以上で、かつ選択した時間刻み(timeStep)で割り切れるかをチェック
-      if (diffInMinutes >= 0 && diffInMinutes % timeStep === 0) {
-        return true;
-      }
-
-      return false;
-    });
-
-    setSelectedTimes(newSelectedTimes);
-  }, [timeRange, timeStep]);
-
 
   const handleTimeChange = (time: string, checked: boolean) => {
     setSelectedTimes((prev) =>
@@ -126,10 +84,34 @@ export default function MultiTimeScheduler() {
 
   const handleClearAll = () => {
     setSelectedDates([]);
-    setTimeRange([9, 17]);
-    setTimeStep(60);
+    setSelectedTimes([]);
+    setOutput("");
   };
-  
+
+  const handleBulkSelect = (
+    type: "morning" | "afternoon" | "evening" | "all" | "none"
+  ) => {
+    let newSelectedTimes: string[] = [];
+    switch (type) {
+      case "morning":
+        newSelectedTimes = allTimes.filter((t) => t >= "08:00" && t < "12:00");
+        break;
+      case "afternoon":
+        newSelectedTimes = allTimes.filter((t) => t >= "13:00" && t < "19:00");
+        break;
+      case "evening":
+        newSelectedTimes = allTimes.filter((t) => t >= "19:00" && t < "23:00");
+        break;
+      case "all":
+        newSelectedTimes = [...allTimes];
+        break;
+      case "none":
+        newSelectedTimes = [];
+        break;
+    }
+    setSelectedTimes(newSelectedTimes);
+  };
+
   const allHours = Object.keys(groupedTimes).sort();
   const startHour = '07';
   const startIndex = allHours.indexOf(startHour);
@@ -137,13 +119,6 @@ export default function MultiTimeScheduler() {
     ...allHours.slice(startIndex),
     ...allHours.slice(0, startIndex),
   ];
-
-  // スライダーの値を HH:MM 形式にフォーマットするヘルパー関数
-  const formatSliderValue = (value: number) => {
-    const hours = Math.floor(value);
-    const minutes = (value - hours) * 60;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-  }
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
@@ -177,66 +152,29 @@ export default function MultiTimeScheduler() {
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <h2 className="text-xl font-semibold">2. 時間帯を選択</h2>
-            <Button onClick={() => setSelectedTimes([])} variant="ghost" size="sm">
-                時間全解除
-            </Button>
-          </div>
-
-          <div className="p-4 border rounded-lg mb-6 space-y-6">
-            <div>
-              <div className="flex justify-between mb-2">
-                <Label htmlFor="time-range">時間範囲</Label>
-                <span className="text-sm font-medium">
-                  {formatSliderValue(timeRange[0])} - {formatSliderValue(timeRange[1])}
-                </span>
-              </div>
-              <Slider
-                id="time-range"
-                value={timeRange}
-                onValueChange={(value) => setTimeRange([value[0], value[1]])}
-                max={24}
-                min={0}
-                // ▼▼▼ 2. スライダーの移動単位を30分(0.5)に変更 ▼▼▼
-                step={0.5}
-                className="my-4"
-              />
-            </div>
-            
-            <div>
-              <Label className="mb-2 block">時間刻み</Label>
-              <RadioGroup
-                value={String(timeStep)}
-                onValueChange={(value) => setTimeStep(Number(value))}
-                className="flex flex-wrap items-center gap-x-6 gap-y-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="180" id="r5" />
-                  <Label htmlFor="r5">3時間</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="120" id="r4" />
-                  <Label htmlFor="r4">2時間</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="60" id="r1" />
-                  <Label htmlFor="r1">60分</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="30" id="r2" />
-                  <Label htmlFor="r2">30分</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="15" id="r3" />
-                  <Label htmlFor="r3">15分</Label>
-                </div>
-              </RadioGroup>
+            <div className="flex items-center gap-x-2">
+              <Button onClick={() => handleBulkSelect("morning")} variant="outline" size="sm">
+                午前
+              </Button>
+              <Button onClick={() => handleBulkSelect("afternoon")} variant="outline" size="sm">
+                午後
+              </Button>
+              <Button onClick={() => handleBulkSelect("evening")} variant="outline" size="sm">
+                夜間
+              </Button>
+              <Button onClick={() => handleBulkSelect("all")} variant="ghost" size="sm">
+                全選択
+              </Button>
+              <Button onClick={() => handleBulkSelect("none")} variant="ghost" size="sm">
+                全解除
+              </Button>
             </div>
           </div>
-
           <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
             {customOrderedHours.map((hour) => (
               <div key={hour}>
                 <h3 className="font-semibold mb-2 border-b pb-1">{hour}:00台</h3>
+                {/* ▼▼▼ このdivのクラス名を変更しました ▼▼▼ */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
                   {groupedTimes[hour as keyof typeof groupedTimes].map((time) => (
                     <label key={time} className="flex items-center space-x-2 p-1 rounded-md hover:bg-gray-100 cursor-pointer">
