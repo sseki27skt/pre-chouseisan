@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import MultiTimeScheduler from '../app/page';
+import MultiTimeScheduler from './MultiTimeScheduler';
 import { Messages } from '../messages/types';
 
 export type SchedulerProps = {
