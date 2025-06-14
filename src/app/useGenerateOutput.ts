@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale/ja";
+import enUS from "./locales/en";
 
 const periodSettings = [
   { id: 1, name: '1限'},
@@ -20,7 +21,8 @@ export function useGenerateOutput({
   selectionMode,
   showWeekday,
 //   allTimes,
-  setOutput
+  setOutput,
+  locale = 'ja',
 }: {
   selectedDates: Date[] | undefined,
   selectedTimes: string[],
@@ -28,7 +30,8 @@ export function useGenerateOutput({
   selectionMode: 'time' | 'period',
   showWeekday: boolean,
 //   allTimes: string[],
-  setOutput: (output: string) => void
+  setOutput: (output: string) => void,
+  locale?: 'ja' | 'en',
 }) {
   useEffect(() => {
     if (!selectedDates || selectedDates.length === 0) {
@@ -40,7 +43,7 @@ export function useGenerateOutput({
 
     const dateLabel = (date: Date) =>
       showWeekday
-        ? format(date, "M/d(E)", { locale: ja })
+        ? format(date, "M/d(E)", { locale: locale === 'en' ? enUS : ja })
         : format(date, "M/d");
 
     let combinations: { display: string }[] = [];
@@ -69,5 +72,5 @@ export function useGenerateOutput({
     }
     setOutput(combinations.map((c) => c.display).join("\n"));
 //   }, [selectedDates, selectedTimes, selectedPeriods, selectionMode, showWeekday, allTimes, setOutput]);
-  }, [selectedDates, selectedTimes, selectedPeriods, selectionMode, showWeekday, setOutput]);
+  }, [selectedDates, selectedTimes, selectedPeriods, selectionMode, showWeekday, setOutput, locale]);
 }

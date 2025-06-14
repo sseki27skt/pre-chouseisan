@@ -1,0 +1,22 @@
+export type Messages = {
+  title: string;
+  description: string;
+  howToUse: string;
+  dateSelect: string;
+  clearDate: string;
+  timeSelect: string;
+  clearTime: string;
+  timeRange: string;
+  timeStep: string;
+  periodSelect: string;
+  clearPeriod: string;
+  outputTitle: string;
+  copyAndGo: string;
+  copyOnly: string;
+  showWeekday: string;
+  outputPlaceholder: string;
+  periodNames: string[];
+  tabTime: string;
+  tabPeriod: string;
+  timeStepOptions: { value: number; label: string }[];
+};
