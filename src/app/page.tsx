@@ -304,8 +304,8 @@ export default function MultiTimeScheduler() {
 
   // --- レンダリング ---
   return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">調整前さん</h1>
+    <div className="p-2 sm:p-4 max-w-full sm:max-w-4xl w-full mx-auto">
+      <h1 className="text-lg sm:text-2xl font-bold mb-4 text-center sm:text-left">調整前さん</h1>
       
       <IntroductorySection />
       
